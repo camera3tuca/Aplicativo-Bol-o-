@@ -1,0 +1,8 @@
+{
+  "name": "Bolão de Futebol",
+  "description": "Dashboard completo de bolão de futebol com palpites, ranking por campeonato, divisão de prêmios Pix, importação de rodadas e painel administrativo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
