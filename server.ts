@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import { Pool } from 'pg';
 import { createServer as createViteServer } from 'vite';
@@ -147,6 +148,10 @@ if (DB_URL) {
       connectionString: DB_URL,
       ssl: DB_URL.includes('sslmode=disable') ? false : { rejectUnauthorized: false },
       connectionTimeoutMillis: 5000,
+    });
+    pool.on('error', (err) => {
+      console.warn('PostgreSQL pool background error (using fallback store):', err.message);
+      dbConnected = false;
     });
     pool
       .query('SELECT 1')
@@ -971,10 +976,18 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = fs.existsSync(path.join(process.cwd(), 'dist'))
+      ? path.join(process.cwd(), 'dist')
+      : path.resolve(__dirname);
+
     app.use(express.static(distPath));
     app.get('*', (req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+      }
     });
   }
 
@@ -983,4 +996,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('Fatal error starting server:', err);
+  process.exit(1);
+});
